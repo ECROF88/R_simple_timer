@@ -55,7 +55,7 @@ impl Timer {
     }
 
     pub fn stop(&self) {
-        self.active.store(false, Ordering::Relaxed);
+        self.active.store(false, Ordering::Release);
     }
 }
 
