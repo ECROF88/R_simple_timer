@@ -1,27 +1,27 @@
-use std::sync::WaitTimeoutResult;
 use std::sync::atomic::Ordering;
 use std::time::Duration;
 use std::{
     sync::{Arc, atomic::AtomicBool},
     thread,
 };
+
 struct Timer {
-    // active: Arc<AtomicBool>,
-    active: &'static AtomicBool,
+    active: Arc<AtomicBool>,
 }
 
 impl Timer {
     pub fn new() -> Self {
-        let active = Box::leak(Box::new(AtomicBool::new(true)));
-        Timer { active }
+        Timer {
+            active: Arc::new(AtomicBool::new(true)),
+        }
     }
 
     pub fn set_timeout<F>(&self, function: F, delay: u64)
     where
-        F: Fn() + Send + 'static,
+        F: FnOnce() + Send + 'static,
     {
-        // let active = self.active.clone();
-        let active = self.active;
+        let active = self.active.clone();
+
         thread::spawn(move || {
             if !active.load(Ordering::Relaxed) {
                 return;
@@ -40,7 +40,8 @@ impl Timer {
     where
         F: Fn() + Send + 'static,
     {
-        let active = self.active;
+        let active = self.active.clone();
+
         thread::spawn(move || {
             while active.load(Ordering::Relaxed) {
                 thread::sleep(Duration::from_millis(interval_ms));
@@ -57,11 +58,13 @@ impl Timer {
         self.active.store(false, Ordering::Relaxed);
     }
 }
+
 impl Drop for Timer {
     fn drop(&mut self) {
         self.stop();
     }
 }
+
 fn main() {
     let counter = Arc::new(std::sync::atomic::AtomicI32::new(0));
     let timer = Timer::new();
@@ -92,9 +95,9 @@ fn main() {
 
     // Stop all
     timer.stop();
-    println!("stop all timer");
+    println!("所有定时器已停止");
 
     thread::sleep(Duration::from_millis(1000));
 
-    println!("counter is: {:?}", counter);
+    println!("最终计数: {:?}", counter);
 }
