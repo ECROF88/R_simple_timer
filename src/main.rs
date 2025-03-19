@@ -1,3 +1,4 @@
+use std::sync::WaitTimeoutResult;
 use std::sync::atomic::Ordering;
 use std::time::Duration;
 use std::{
@@ -43,7 +44,6 @@ impl Timer {
         thread::spawn(move || {
             while active.load(Ordering::Relaxed) {
                 thread::sleep(Duration::from_millis(interval_ms));
-
                 if !active.load(Ordering::Relaxed) {
                     break;
                 }
